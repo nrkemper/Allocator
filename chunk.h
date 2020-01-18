@@ -10,7 +10,7 @@
 #define __CHUNK_H__
 
 #include <stdio.h>
-#include "chunkdll.h"
+#include "blockdll.h"
 
 typedef char        bool;
 
@@ -25,8 +25,8 @@ struct chunk {
     unsigned short  nfreeblocks;    //used only if fixed
     unsigned short  nusedblocks;
     unsigned short  sblocks;
-    struct chunkdll blksaddr;       //blocklist sorted by address
-    struct chunkdll blkssize;       //blocklist sorted by size
+    struct blockdll blksaddr;       //blocklist sorted by address
+    struct blockdll blkssize;       //blocklist sorted by size
     struct chunk*   next;
     struct chunk*   prev;
     bool            fixed;

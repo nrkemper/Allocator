@@ -12,34 +12,28 @@
 
 #include "sys.h"
 
-#include "chunk.h"
-#include "chunkdll.h"
+#include "blockdll.h"
 
 int main(int argc, const char * argv[]) {
     // insert code here...
     
-    struct chunkdll     dll;
-    struct chunknode*   tmp;
-    struct chunk        chunks[20];
-    char                name[17];
+    struct blockdll     dll;
+    struct blocknode*   tmp;
+    struct block        blocks[20];
     int                 i;
     
-    memset (chunks, 0, sizeof (struct chunk) * 20);
+    memset (blocks, 0, sizeof (struct block) * 20);
     
     for (i=0; i<20; i++) {
-        chunks[i].id = i;
+        blocks[i].id = i;
         
-        memset(name, 0, 17);
-        sprintf (name, "CHUNK %d", i);
-        memcpy (chunks[i].name, name, 16);
+        tmp         = (struct blocknode*)malloc (sizeof (struct blocknode));
+        tmp->ref    = &blocks[i];
         
-        tmp         = (struct chunknode*)malloc (sizeof (struct chunknode));
-        tmp->ref    = &chunks[i];
-        
-        __chunkdll_push (&dll, tmp);
+        __blockdll_push (&dll, tmp);
     }
     
-    __chunkdll_dump (&dll, stdout);
+    __blockdll_dump (&dll, stdout);
     
     Sys_Printf("TRANSVERSING FORWARDS\n");
     for (tmp=dll.head,i=0; tmp; tmp=tmp->next, i++);
@@ -47,6 +41,6 @@ int main(int argc, const char * argv[]) {
     Sys_Printf("TRANSVERSING BACKWARDS\n");
     for (tmp=dll.tail, i=0; tmp; tmp=tmp->prev, i++);
     Sys_Printf("Transversed %d nodes\n", i);
-    Sys_Printf ("Destroyed %u nodes\n", __chunkdll_destroy (&dll));
+    Sys_Printf ("Destroyed %u nodes\n", __blockdll_destroy (&dll));
     return 0;
 }

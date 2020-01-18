@@ -48,7 +48,7 @@ struct chunknode* __chunkdll_pop (struct chunkdll* dll)
     struct chunknode*   head = dll->head;
     
     if (head) {
-        dll->head       = head->next;
+        dll->head           = head->next;
         
         if (dll->head)
             dll->head->prev = (struct chunknode*)0;
