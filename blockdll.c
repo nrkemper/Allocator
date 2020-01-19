@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include "blockdll.h"
 #include "block.h"
+#include "sys.h"
 
 void __blockdll_push (struct blockdll* dll, struct blocknode* b)
 {
@@ -24,6 +25,78 @@ void __blockdll_push (struct blockdll* dll, struct blocknode* b)
     }
     
     b->prev         = (struct blocknode*)0;
+    b->dll          = dll;
+}
+
+
+void __blockdll_append (struct blockdll* dll, struct blocknode* b)
+{
+    struct blocknode*   tail = dll->tail;
+    
+    if (tail) {
+        tail->next  = b;
+        b->prev     = tail;
+        dll->tail   = b;
+    } else {
+        dll->head   = dll->tail = b;
+        b->prev     = (struct blocknode*)0;
+    }
+    
+    b->next         = (struct blocknode*)0;
+    b->dll          = dll;
+}
+
+void __blockdll_insert (struct blockdll* dll, struct blocknode* des, struct blocknode* b)
+{
+    struct blocknode*   head, *tail;
+    
+    if (dll == (struct blockdll*)0)
+        return;
+    
+    if (b == (struct blocknode*)0)
+        return;
+    
+    if (des == (struct blocknode*)0)
+        des = dll->head;
+    else if (dll != des->dll)
+        return;
+    
+    head = dll->head;
+    tail = dll->tail;
+    
+    if (head != (struct blocknode*)0) {
+        if (des != head &&
+            des != tail) {
+            b->next         = des;
+            b->prev         = des->prev;
+            des->prev->next = b;
+            des->prev       = b;
+        } else if (des == head &&
+                   des != tail) {
+            b->next         = des;
+            b->prev         = (struct blocknode*)0;
+            des->prev       = b;
+            dll->head       = b;
+        } else if (des != head &&
+                   des == tail) {
+            b->next         = des;
+            b->prev         = des->prev;
+            des->prev->next = b;
+            des->prev       = b;
+        } else if (des == head &&
+                     des == tail) {
+            b->next         = des;
+            b->prev         = (struct blocknode*)0;
+            des->prev       = b;
+            dll->head       = b;
+        }
+    }
+    else {
+        dll->head = dll->tail = b;
+        b->prev = b->next = (struct blocknode*)0;
+    }
+    
+    b->dll          = dll;
 }
 
 struct blocknode* __blockdll_pop (struct blockdll* dll)
@@ -37,7 +110,43 @@ struct blocknode* __blockdll_pop (struct blockdll* dll)
             dll->head->prev = (struct blocknode*)0;
     }
     
+    head->dll   = (struct blockdll*)0;
+    
     return head;
+}
+
+struct blocknode* __blockdll_remove (struct blocknode* b)
+{
+    struct blockdll*    dll = b->dll;
+    
+    if (b != dll->head &&
+        b != dll->tail) {
+        
+        b->prev->next   = b->next;
+        b->next->prev   = b->prev;
+        
+    } else if (b == dll->head &&
+               b != dll->tail) {
+        
+        b->next->prev   = (struct blocknode*)0;
+        dll->head       = b;
+        
+    } else if (b != dll->head &&
+               b == dll->tail) {
+        
+        b->prev->next   = (struct blocknode*)0;
+        dll->tail       = b;
+        
+    } else if (b == dll->head &&
+               b == dll->tail) {
+        
+        dll->head = dll->tail = (struct blocknode*)0;
+        
+    }
+    
+    b->dll   = (struct blockdll*)0;
+    
+    return b;
 }
 
 void __blockdll_dump (struct blockdll* dll, FILE* stream)

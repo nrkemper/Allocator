@@ -16,6 +16,7 @@ struct chunk;
 struct chunknode {
     struct chunknode*   next;
     struct chunknode*   prev;
+    struct chunkdll*    dll;
     struct chunk*       ref;
 };
 
@@ -26,7 +27,9 @@ struct chunkdll {
 
 void __chunkdll_push (struct chunkdll* dll, struct chunknode* c);
 void __chunkdll_append (struct chunkdll* dll, struct chunknode* c);
+void __chunkdll_insert (struct chunknode* des, struct chunknode* c);
 struct chunknode* __chunkdll_pop (struct chunkdll* dll);//returns head. DOESN'T delete
+struct chunknode* __chunkdll_remove (struct chunknode* c);
 void __chunkdll_dump (struct chunkdll* dll, FILE* stream);
 unsigned int __chunkdll_destroy (struct chunkdll* dll);
 #endif /* __CHUNKDLL_H__ */

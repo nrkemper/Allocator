@@ -24,6 +24,7 @@ void __chunkdll_push (struct chunkdll* dll, struct chunknode* c)
     }
     
     c->prev         = (struct chunknode*)0;
+    c->dll          = dll;
 }
 
 void __chunkdll_append (struct chunkdll* dll, struct chunknode* c)
@@ -40,6 +41,14 @@ void __chunkdll_append (struct chunkdll* dll, struct chunknode* c)
     }
     
     c->next         = (struct chunknode*)0;
+    c->dll          = dll;
+}
+
+void __chunkdll_insert (struct chunknode* des, struct chunknode* c)
+{
+    
+    if (c == (struct chunknode*)0)
+        return;
 }
 
 //Returns head. DOESN'T delete
@@ -49,12 +58,19 @@ struct chunknode* __chunkdll_pop (struct chunkdll* dll)
     
     if (head) {
         dll->head           = head->next;
+        head->dll           = (struct chunkdll*)0;
         
         if (dll->head)
             dll->head->prev = (struct chunknode*)0;
     }
     
     return head;
+}
+
+struct chunknode* __chunkdll_remove (struct chunknode* c)
+{
+
+    return (struct chunknode*)0;
 }
 
 void __chunkdll_dump (struct chunkdll* dll, FILE* stream)
