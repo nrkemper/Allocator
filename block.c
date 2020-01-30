@@ -9,6 +9,12 @@
 #include "block.h"
 #include "sys.h"
 
+bool __block_fixed_partition (struct chunk* c, unsigned int size)
+{
+    
+    return 1;
+}
+
 void __block_dump (struct block* b, FILE* stream)
 {
     Sys_FPrintf (stream, " --------------------------\n");

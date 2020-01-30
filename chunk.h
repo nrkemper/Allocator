@@ -24,15 +24,21 @@ struct chunk {
     unsigned long   totalspace;
     unsigned short  nfreeblocks;    //used only if fixed
     unsigned short  nusedblocks;
-    unsigned short  sblocks;
-    struct blockdll blksaddr;       //blocklist sorted by address
-    struct blockdll blkssize;       //blocklist sorted by size
+    unsigned int    sblocks;
     struct chunk*   next;
     struct chunk*   prev;
     bool            fixed;
     bool            readonly;
+    struct blockdll blocks;
 };
 
+unsigned long __chunk_calculate_size (unsigned int sblocks,
+                                      unsigned int nblocks, bool fixed,
+                                      unsigned int sheap);
+bool __chunk_fixed_partition (unsigned int sblocks, unsigned int nblocks,
+                              bool fixed, unsigned int sheap, bool readonly,
+                              char name[17]);
 void __chunk_dump (struct chunk* c, FILE* stream);
+void __chunk_free (struct chunk* c);
 
 #endif /* __CHUNK_H__ */

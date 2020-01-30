@@ -9,10 +9,9 @@
 #ifndef __BLOCKDLL_H__
 #define __BLOCKDLL_H__
 
-#include "block.h"
+#define SPARE_NODE_INCREASE_AMOUNT      20
 
-struct block;
-struct blockdll;
+#include <stdio.h>
 
 struct blocknode {
     struct blocknode*   next;
@@ -31,6 +30,8 @@ void __blockdll_append (struct blockdll* dll, struct blocknode* b);
 void __blockdll_insert (struct blockdll* dll, struct blocknode* des, struct blocknode* b);
 struct blocknode* __blockdll_pop (struct blockdll* dll);
 struct blocknode* __blockdll_remove (struct blocknode* b);
+struct blocknode* __blockdll_grab_spare_node (void);
+void __blockdll_alloc_spare_nodes (unsigned int n);
 void __blockdll_dump (struct blockdll* dll, FILE* stream);
-unsigned int __blockdll_destroy (struct blockdll* dll);
+unsigned long __blockdll_destroy (struct blockdll* dll);
 #endif /* __BLOCKDLL_H__ */

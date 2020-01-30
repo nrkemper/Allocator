@@ -7,7 +7,9 @@
 //
 
 #include <stdlib.h>
+#include <string.h>
 #include "blockdll.h"
+#include "memzone.h"
 #include "block.h"
 #include "sys.h"
 
@@ -149,6 +151,28 @@ struct blocknode* __blockdll_remove (struct blocknode* b)
     return b;
 }
 
+struct blocknode* __blockdll_grab_spare_node (void)
+{
+    if (sparenodes.head == (struct blocknode*)0)
+        __blockdll_alloc_spare_nodes(SPARE_NODE_INCREASE_AMOUNT);
+    
+    return __blockdll_pop (&sparenodes);
+}
+
+void __blockdll_alloc_spare_nodes (unsigned int n)
+{
+    struct blocknode*   tmp;
+    unsigned long       snode   = sizeof (struct blocknode);
+    
+    while (n--) {
+        tmp = (struct blocknode*)malloc (snode);
+        memset (tmp, 0, snode);
+        
+        __blockdll_push (&sparenodes, tmp);
+        totmemalloc += snode;
+    }
+}
+
 void __blockdll_dump (struct blockdll* dll, FILE* stream)
 {
     struct blocknode*   np = dll->head;
@@ -159,16 +183,19 @@ void __blockdll_dump (struct blockdll* dll, FILE* stream)
     }
 }
 
-unsigned int __blockdll_destroy (struct blockdll* dll)
+unsigned long __blockdll_destroy (struct blockdll* dll)
 {
     struct blocknode*   todel;
-    unsigned int    i=0;
+    unsigned long       freed=0;
+    unsigned int        snode = sizeof (struct blocknode);
     
     while (dll->head) {
-        todel = __blockdll_pop (dll);
+        todel       = __blockdll_pop (dll);
         free (todel);
-        i++;
+        
+        totmemalloc -= snode;
+        freed       += snode;
     }
     
-    return i;
+    return freed;
 }

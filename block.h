@@ -10,6 +10,9 @@
 #define __BLOCK_H__
 
 #include <stdio.h>
+#include "chunk.h"
+
+typedef char    bool;
 
 struct block {
     unsigned int    id;
@@ -20,5 +23,6 @@ struct block {
     unsigned int    size;
 };
 
+bool __block_fixed_partition (struct chunk* c, unsigned int size);
 void __block_dump (struct block* b, FILE* stream);
 #endif /* __BLOCK_H__ */

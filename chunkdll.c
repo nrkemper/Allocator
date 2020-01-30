@@ -7,6 +7,7 @@
 //
 
 #include <stdlib.h>
+#include "memzone.h"
 #include "chunkdll.h"
 #include "chunk.h"
 
@@ -64,6 +65,8 @@ struct chunknode* __chunkdll_pop (struct chunkdll* dll)
             dll->head->prev = (struct chunknode*)0;
     }
     
+    head->dll       = (struct chunkdll*)0;
+    
     return head;
 }
 
@@ -86,13 +89,16 @@ void __chunkdll_dump (struct chunkdll* dll, FILE* stream)
 unsigned int __chunkdll_destroy (struct chunkdll* dll)
 {
     struct chunknode*   todel;
-    unsigned int        i=0;
+    unsigned int        freed = 0;
+    unsigned int        snode = sizeof (struct chunknode);
     
     while (dll->head) {
-        todel = __chunkdll_pop (dll);
+        todel   = __chunkdll_pop (dll);
+        __blockdll_destroy (&todel->ref->blocks);
         free (todel);
-        i++;
+        totmemalloc -= snode;
+        freed       += snode;
     }
     
-    return i;
+    return freed;
 }
