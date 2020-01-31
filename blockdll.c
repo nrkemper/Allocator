@@ -113,6 +113,8 @@ struct blocknode* __blockdll_pop (struct blockdll* dll)
     }
     
     head->dll   = (struct blockdll*)0;
+    head->next  = (struct blocknode*)0;
+    head->prev  = (struct blocknode*)0;
     
     return head;
 }
@@ -146,7 +148,9 @@ struct blocknode* __blockdll_remove (struct blocknode* b)
         
     }
     
-    b->dll   = (struct blockdll*)0;
+    b->dll      = (struct blockdll*)0;
+    b->next     = (struct blocknode*)0;
+    b->prev     = (struct blocknode*)0;
     
     return b;
 }
@@ -191,10 +195,9 @@ unsigned long __blockdll_destroy (struct blockdll* dll)
     
     while (dll->head) {
         todel       = __blockdll_pop (dll);
-        free (todel);
-        
-        totmemalloc -= snode;
+        //totmemalloc -= snode;
         freed       += snode;
+        free (todel);
     }
     
     return freed;

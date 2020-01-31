@@ -24,5 +24,6 @@ struct block {
 };
 
 bool __block_fixed_partition (struct chunk* c, unsigned int size);
+bool __block_partition (struct chunk* c, unsigned int size);
 void __block_dump (struct block* b, FILE* stream);
 #endif /* __BLOCK_H__ */

@@ -50,7 +50,7 @@ bool __chunk_fixed_partition (unsigned int sblocks, unsigned int nblocks,
         memory->clast->next = c;
         c->prev             = memory->clast;
     } else {
-        c = memory->data;
+        c       = memory->data;
         c->prev = (struct chunk*)0;
     }
     
@@ -68,6 +68,7 @@ bool __chunk_fixed_partition (unsigned int sblocks, unsigned int nblocks,
     c->fixed        = fixed;
     c->readonly     = readonly;
     c->next         = (struct chunk*)0;
+    c->blast        = (struct block*)0;
     c->start        = (char*)c + sizeof (struct chunk);
     c->end          = (char*)c + c->totalspace - 1;
     
@@ -83,8 +84,8 @@ bool __chunk_fixed_partition (unsigned int sblocks, unsigned int nblocks,
     
     node->ref   = c;
     __chunkdll_push (&memory->chunks, node);
-    
     totmemalloc         += sizeof (struct chunknode);
+    
     memory->usedspace   += sizeof (struct chunk);
     memory->freespace   -= sizeof (struct chunk);
     memory->nchunks++;
@@ -121,8 +122,11 @@ void __chunk_dump (struct chunk* c, FILE* stream)
     Sys_FPrintf (stream, "--------------------------------\n\n");
 }
 
-void __chunk_free (struct chunk* c)
+unsigned long __chunk_free (struct chunk* c)
 {
-    Sys_Printf ("FREEING CHUNK:     %lu\n", c->id);
-    __blockdll_destroy(&c->blocks);
+    unsigned long   freed;
+    freed = __blockdll_destroy(&c->blocks);
+    //FIXME: blksbysize & blksbyaddr
+    
+    return freed;
 }

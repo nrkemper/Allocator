@@ -27,6 +27,7 @@ struct chunk {
     unsigned int    sblocks;
     struct chunk*   next;
     struct chunk*   prev;
+    struct block*   blast;
     bool            fixed;
     bool            readonly;
     struct blockdll blocks;
@@ -39,6 +40,6 @@ bool __chunk_fixed_partition (unsigned int sblocks, unsigned int nblocks,
                               bool fixed, unsigned int sheap, bool readonly,
                               char name[17]);
 void __chunk_dump (struct chunk* c, FILE* stream);
-void __chunk_free (struct chunk* c);
+unsigned long __chunk_free (struct chunk* c);
 
 #endif /* __CHUNK_H__ */

@@ -135,12 +135,36 @@ void __memzone_dump (FILE* stream)
 }
 bool __memzone_destroy (void)
 {
-    unsigned long       size = memory->totalspace;
+    unsigned long       mzsize = memory->totalspace;
+    unsigned long       bnodefreed=0, cnodefreed, totfreed;
+    struct chunk*       c=memory->data;
+    bool                ret=TRUE;
     
-    __chunkdll_destroy(&memory->chunks);
+    while (c) {
+        bnodefreed  += __chunk_free (c);
+        c           = c->next;
+    }
+    
+    cnodefreed = __chunkdll_destroy(&memory->chunks);
     free (memory);
-    totmemalloc -= size;
     
-    Sys_Printf("TOTAL MEMORY REMAINING: %lu\n", totmemalloc);
-    return 1;
+    totfreed    = bnodefreed + cnodefreed + mzsize;
+    
+    Sys_Printf ("TOTAL MEMORY ALLOCATED:    %lu bytes\n", totmemalloc);
+    Sys_Printf ("DESTROYED BLOCK NODES:     %lu bytes\n", bnodefreed);
+    Sys_Printf ("DESTROYED CHUNK NODES:     %lu bytes\n", cnodefreed);
+    Sys_Printf ("DESTROYED MEMZONE:         %lu bytes\n", mzsize);
+    Sys_Printf ("TOTAL MEMORY FREED:        %lu bytes\n", totfreed);
+    Sys_Printf ("STATUS OF MEMORY:          ");
+    
+    if (totfreed < totmemalloc) {
+        Sys_Printf ("MEMORY LEAK\n");
+        ret = FALSE;
+    } else if (totfreed > totmemalloc) {
+        Sys_Printf ("SYSTEM ERROR\n");
+        ret = FALSE;
+    } else if (totfreed == totmemalloc)
+        Sys_Printf ("SUCCESS\n");
+    
+    return ret;
 }

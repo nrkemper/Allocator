@@ -7,12 +7,24 @@
 //
 
 #include "block.h"
+#include "memzone.h"
 #include "sys.h"
 
 bool __block_fixed_partition (struct chunk* c, unsigned int size)
 {
+    struct block*   b;
     
+    if (!c->fixed)
+        return FALSE;
+    
+    if (size > c->freespace)
+        return FALSE;
     return 1;
+}
+
+bool __block_partition (struct chunk* c, unsigned int size)
+{
+    
 }
 
 void __block_dump (struct block* b, FILE* stream)

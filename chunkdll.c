@@ -86,18 +86,19 @@ void __chunkdll_dump (struct chunkdll* dll, FILE* stream)
     }
 }
 
-unsigned int __chunkdll_destroy (struct chunkdll* dll)
+unsigned long __chunkdll_destroy (struct chunkdll* dll)
 {
     struct chunknode*   todel;
-    unsigned int        freed = 0;
+    unsigned long       freed = 0;
     unsigned int        snode = sizeof (struct chunknode);
     
     while (dll->head) {
-        todel   = __chunkdll_pop (dll);
-        __blockdll_destroy (&todel->ref->blocks);
-        free (todel);
-        totmemalloc -= snode;
+        todel       = __chunkdll_pop (dll);
+        //freed       += __blockdll_destroy (&todel->ref->blocks);
+        //totmemalloc -= snode;
         freed       += snode;
+        
+        free (todel);
     }
     
     return freed;
