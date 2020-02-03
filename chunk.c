@@ -13,40 +13,45 @@
 #include "sys.h"
 #include "memzone.h"
 
-unsigned long __chunk_calculate_size (unsigned int sblocks,
-                                      unsigned int nblocks, bool fixed,
-                                      unsigned int sheap)
+unsigned long __chunk_calculate_size (unsigned int block_size,
+                                      unsigned int num_blocks, bool fixed,
+                                      unsigned int heap_size)
 {
-    unsigned long       size;
+    unsigned long       total_size;
     
-    size = sizeof (struct chunk) + calculate_padding (sizeof (struct chunk));
+    total_size = sizeof (struct chunk) + calculate_padding (sizeof (struct chunk));
     
     if (fixed) {
-        sblocks =   sizeof (struct block) +
-                    calculate_padding(sizeof (struct block)) +
-                    sblocks +
-                    calculate_padding (sblocks);
+        block_size =    sizeof (struct block) +
+                        calculate_padding(sizeof (struct block)) +
+                        block_size +
+                        calculate_padding (block_size);
         
-        size    += (sblocks * nblocks);
+        total_size  += (block_size * num_blocks);
     } else {
-        size += sheap + calculate_padding (sheap);
+        total_size  += heap_size + calculate_padding (heap_size);
     }
     
-    return size;
+    return total_size;
 }
 
-bool __chunk_fixed_partition (unsigned int sblocks, unsigned int nblocks,
-                              bool fixed, unsigned int sheap, bool readonly,
+bool __chunk_fixed_partition (unsigned int block_size, unsigned int num_blocks,
+                              bool fixed, unsigned int heap_size, bool read_only,
                               char name[17])
 {
     struct chunk*       c;
     struct chunknode*   node;
+    uint64_t            total_size = __chunk_calculate_size(block_size, num_blocks,
+                                                            fixed, heap_size);
     
-    sblocks = sblocks + calculate_padding (sblocks);
+    if (total_size > memory->freespace)
+        return false;
+    
+    block_size += calculate_padding (block_size);
     
     if (memory->clast) {
         c                   = (struct chunk*)((char*)memory->clast +
-                                              memory->clast->totalspace);
+                                              memory->clast->total_space);
         memory->clast->next = c;
         c->prev             = memory->clast;
     } else {
@@ -57,45 +62,46 @@ bool __chunk_fixed_partition (unsigned int sblocks, unsigned int nblocks,
     memory->clast       = c;
     
     memset (c, 0, sizeof (struct chunk));
-    c->id           = memid++;
+    c->id               = memid++;
     memcpy (c->name, name, 16);
-    c->totalspace   = __chunk_calculate_size(sblocks, nblocks, fixed, sheap);
-    c->usedspace    = sizeof (struct chunk);
-    c->freespace    = c->totalspace - c->usedspace;
-    c->sblocks      = fixed ? sblocks : 0;
-    c->nfreeblocks  = nblocks;
-    c->nusedblocks  = 0;
-    c->fixed        = fixed;
-    c->readonly     = readonly;
-    c->next         = (struct chunk*)0;
-    c->blast        = (struct block*)0;
-    c->start        = (char*)c + sizeof (struct chunk);
-    c->end          = (char*)c + c->totalspace - 1;
+    c->total_space      = total_size;
+    c->used_space       = sizeof (struct chunk);
+    c->free_space       = c->total_space - c->used_space;
+    c->size_blocks      = fixed ? block_size : 0;
+    c->num_free_blocks  = num_blocks;
+    c->num_used_blocks  = 0;
+    c->fixed            = fixed;
+    c->read_only        = read_only;
+    c->next             = (struct chunk*)0;
+    c->last_block       = (struct block*)0;
+    c->start            = (char*)c + sizeof (struct chunk);
+    c->end              = (char*)c + c->total_space - 1;
     
     if (fixed) {
-        while (nblocks--) {
-            __block_fixed_partition (c, sblocks);
+        while (num_blocks--) {
+            __block_fixed_partition (c, block_size);
         }
     }
     
     node = (struct chunknode*)malloc (sizeof (struct chunknode));
     if (node == (struct chunknode*)0)
-        return 0;
+        return false;
     
     node->ref   = c;
     __chunkdll_push (&memory->chunks, node);
     totmemalloc         += sizeof (struct chunknode);
     
-    memory->usedspace   += sizeof (struct chunk);
-    memory->freespace   -= sizeof (struct chunk);
+    memory->usedspace   += total_size;
+    memory->freespace   -= total_size;
     memory->nchunks++;
     
-    return 1;
+    return true;
 }
 
 void __chunk_dump (struct chunk* c, FILE* stream)
 {
-    char    name[17];
+    char                name[17];
+    struct blocknode*   block_ptr;
     
     memset (name, 0, 17);
     memcpy (name, c->name, 16);
@@ -109,24 +115,29 @@ void __chunk_dump (struct chunk* c, FILE* stream)
     Sys_FPrintf (stream, "ADDRESS:      %p\n", c);
     Sys_FPrintf (stream, "START:        %p\n", c->start);
     Sys_FPrintf (stream, "END:          %p\n", c->end);
-    Sys_FPrintf (stream, "FREE SPACE:   %lu\n", c->freespace);
-    Sys_FPrintf (stream, "USED SPACE:   %lu\n", c->usedspace);
-    Sys_FPrintf (stream, "TOTAL SPACE:  %lu\n", c->totalspace);
+    Sys_FPrintf (stream, "FREE SPACE:   %lu\n", c->free_space);
+    Sys_FPrintf (stream, "USED SPACE:   %lu\n", c->used_space);
+    Sys_FPrintf (stream, "TOTAL SPACE:  %lu\n", c->total_space);
     Sys_FPrintf (stream, "NEXT CHUNK:   %p\n", c->next);
     Sys_FPrintf (stream, "PREV CHUNK:   %p\n", c->prev);
-    Sys_FPrintf (stream, "FREE BLOCKS:  %hu\n", c->nfreeblocks);
-    Sys_FPrintf (stream, "USED BLOCKS:  %hu\n", c->nusedblocks);
-    Sys_FPrintf (stream, "SIZE BLOCKS:  %hu\n", c->sblocks);
+    Sys_FPrintf (stream, "FREE BLOCKS:  %hu\n", c->num_free_blocks);
+    Sys_FPrintf (stream, "USED BLOCKS:  %hu\n", c->num_used_blocks);
+    Sys_FPrintf (stream, "SIZE BLOCKS:  %hu\n", c->size_blocks);
     Sys_FPrintf (stream, "FIXED:        %s\n", c->fixed ? "YES" : "NO");
-    Sys_FPrintf (stream, "READONLY:     %s\n", c->readonly ? "YES" : "NO");
+    Sys_FPrintf (stream, "READONLY:     %s\n", c->read_only ? "YES" : "NO");
+    
+    for (block_ptr=c->blocks_by_addr.head; block_ptr; block_ptr=block_ptr->next)
+        __block_dump(block_ptr->ref, stream);
+    
     Sys_FPrintf (stream, "--------------------------------\n\n");
 }
 
 unsigned long __chunk_free (struct chunk* c)
 {
     unsigned long   freed;
-    freed = __blockdll_destroy(&c->blocks);
-    //FIXME: blksbysize & blksbyaddr
+    
+    freed = __blockdll_destroy(&c->blocks_by_size);
+    freed += __blockdll_destroy(&c->blocks_by_addr);
     
     return freed;
 }

@@ -20,8 +20,8 @@
 #define NUM_640BYTE_BLOCKS      10
 #define HEAP_SIZE               4096
 
-#define TRUE    1
-#define FALSE   0
+#define true    1
+#define false   0
 
 #include "chunkdll.h"
 

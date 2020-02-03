@@ -51,7 +51,7 @@ bool __memzone_init (void)
     memory = (struct memzone*)malloc (size);
     if (memory == (struct memzone*)0) {
         Sys_FPrintf (stderr, "ERROR: could not allocate memory for memzone\n");
-        return FALSE;
+        return false;
     }
     
     totmemalloc         = size;
@@ -64,34 +64,34 @@ bool __memzone_init (void)
                             sizeof (struct memzone) +
                             calculate_padding(sizeof (struct memzone));
     
-    __chunk_fixed_partition (64, NUM_64BYTE_BLOCKS, TRUE, 0, FALSE,
+    __chunk_fixed_partition (64, NUM_64BYTE_BLOCKS, true, 0, false,
                              "64_BYTE_BLOCKS");
     
-    __chunk_fixed_partition (128, NUM_128BYTE_BLOCKS, TRUE, 0, FALSE,
+    __chunk_fixed_partition (128, NUM_128BYTE_BLOCKS, true, 0, false,
                              "128_BYTE_BLOCKS");
     
-    __chunk_fixed_partition (192, NUM_192BYTE_BLOCKS, TRUE, 0, FALSE,
+    __chunk_fixed_partition (192, NUM_192BYTE_BLOCKS, true, 0, false,
                              "192_BYTE_BLOCKS");
     
-    __chunk_fixed_partition (256, NUM_256BYTE_BLOCKS, TRUE, 0, FALSE,
+    __chunk_fixed_partition (256, NUM_256BYTE_BLOCKS, true, 0, false,
                              "256_BYTE_BLOCKS");
     
-    __chunk_fixed_partition (320, NUM_320BYTE_BLOCKS, TRUE, 0,FALSE,
+    __chunk_fixed_partition (320, NUM_320BYTE_BLOCKS, true, 0,false,
                              "320_BYTE_BLOCKS");
     
-    __chunk_fixed_partition (384, NUM_384BYTE_BLOCKS, TRUE, 0, FALSE,
+    __chunk_fixed_partition (384, NUM_384BYTE_BLOCKS, true, 0, false,
                              "384_BYTE_BLOCKS");
     
-    __chunk_fixed_partition (512, NUM_512BYTE_BLOCKS, TRUE, 0, FALSE,
+    __chunk_fixed_partition (512, NUM_512BYTE_BLOCKS, true, 0, false,
                              "512_BYTE_BLOCKS");
     
-    __chunk_fixed_partition (640, NUM_640BYTE_BLOCKS, TRUE, 0, FALSE,
+    __chunk_fixed_partition (640, NUM_640BYTE_BLOCKS, true, 0, false,
                              "640_BYTE_BLOCKS");
     
-    __chunk_fixed_partition(0, 0, FALSE, HEAP_SIZE, FALSE, "HEAP");
+    __chunk_fixed_partition(0, 0, false, HEAP_SIZE, false, "HEAP");
     
     Sys_Printf("TOTAL MEMORY ALLOCATED: %lu\n", totmemalloc);
-    return TRUE;
+    return true;
 }
 
 unsigned long __memzone_calculate_size (void)
@@ -99,22 +99,22 @@ unsigned long __memzone_calculate_size (void)
     unsigned long   size;
     
     size = sizeof (struct memzone) + calculate_padding(sizeof (struct memzone));
-    size += __chunk_calculate_size(64, NUM_64BYTE_BLOCKS, TRUE, 0);
-    size += __chunk_calculate_size(128, NUM_128BYTE_BLOCKS, TRUE, 0);
-    size += __chunk_calculate_size(192, NUM_192BYTE_BLOCKS, TRUE, 0);
-    size += __chunk_calculate_size(256, NUM_256BYTE_BLOCKS, TRUE, 0);
-    size += __chunk_calculate_size(320, NUM_320BYTE_BLOCKS, TRUE, 0);
-    size += __chunk_calculate_size(384, NUM_384BYTE_BLOCKS, TRUE, 0);
-    size += __chunk_calculate_size(512, NUM_512BYTE_BLOCKS, TRUE, 0);
-    size += __chunk_calculate_size(640, NUM_640BYTE_BLOCKS, TRUE, 0);
-    size += __chunk_calculate_size(0, 0, FALSE, HEAP_SIZE);
+    size += __chunk_calculate_size(64, NUM_64BYTE_BLOCKS, true, 0);
+    size += __chunk_calculate_size(128, NUM_128BYTE_BLOCKS, true, 0);
+    size += __chunk_calculate_size(192, NUM_192BYTE_BLOCKS, true, 0);
+    size += __chunk_calculate_size(256, NUM_256BYTE_BLOCKS, true, 0);
+    size += __chunk_calculate_size(320, NUM_320BYTE_BLOCKS, true, 0);
+    size += __chunk_calculate_size(384, NUM_384BYTE_BLOCKS, true, 0);
+    size += __chunk_calculate_size(512, NUM_512BYTE_BLOCKS, true, 0);
+    size += __chunk_calculate_size(640, NUM_640BYTE_BLOCKS, true, 0);
+    size += __chunk_calculate_size(0, 0, false, HEAP_SIZE);
     
     return size;
 }
 
 void __memzone_dump (FILE* stream)
 {
-    struct chunk*   c = memory->data;
+    struct chunk*   c = memory->clast;
     
     Sys_FPrintf (stream, " ----------------------\n");
     Sys_FPrintf (stream, "|        MEMORY        |\n");
@@ -138,13 +138,14 @@ bool __memzone_destroy (void)
     unsigned long       mzsize = memory->totalspace;
     unsigned long       bnodefreed=0, cnodefreed, totfreed;
     struct chunk*       c=memory->data;
-    bool                ret=TRUE;
+    bool                ret=true;
     
     while (c) {
         bnodefreed  += __chunk_free (c);
         c           = c->next;
     }
     
+    bnodefreed += __blockdll_destroy (&sparenodes);
     cnodefreed = __chunkdll_destroy(&memory->chunks);
     free (memory);
     
@@ -157,14 +158,18 @@ bool __memzone_destroy (void)
     Sys_Printf ("TOTAL MEMORY FREED:        %lu bytes\n", totfreed);
     Sys_Printf ("STATUS OF MEMORY:          ");
     
+    //FIXME: clean this up
     if (totfreed < totmemalloc) {
         Sys_Printf ("MEMORY LEAK\n");
-        ret = FALSE;
+        ret = false;
     } else if (totfreed > totmemalloc) {
         Sys_Printf ("SYSTEM ERROR\n");
-        ret = FALSE;
+        ret = false;
     } else if (totfreed == totmemalloc)
         Sys_Printf ("SUCCESS\n");
+    
+    meminit = false;
+    totmemalloc -= totfreed;
     
     return ret;
 }
